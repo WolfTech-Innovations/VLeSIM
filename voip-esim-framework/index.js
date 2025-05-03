@@ -1,6 +1,6 @@
 // Global Configuration
 const CONFIG = {
-    SIP_SERVER_URL: 'https://vlesim.onrender.com', // SIP server domain
+    SIP_SERVER_URL: 'udp://vlesim.onrender.com', // SIP server domain
     SIP_SERVER_PORT: 5060,         // Default SIP port
     SIP_SERVER_PROTOCOL: 'udp',    // Protocol (udp/tcp)
     PHONE_NUMBER_PREFIX: '1555',   // Prefix for generated phone numbers
@@ -174,7 +174,7 @@ const CONFIG = {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
-  
+
   class ESIMProvisioner {
     constructor() {
       this.profiles = new Map();
