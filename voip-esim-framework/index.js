@@ -1,6 +1,6 @@
 // Global Configuration
 const CONFIG = {
-    SIP_SERVER_URL: 'vlesim.onrender.com', // SIP server domain
+    SIP_SERVER_URL: 'localhost', // SIP server domain
     SIP_SERVER_PORT: 5060,         // Default SIP port
     SIP_SERVER_PROTOCOL: 'udp',    // Protocol (udp/tcp)
     PHONE_NUMBER_PREFIX: '1555',   // Prefix for generated phone numbers
