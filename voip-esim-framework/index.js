@@ -16,6 +16,8 @@ const CONFIG = {
   const blessed = require('blessed');
   
   const client = dgram.createSocket('udp4');
+  const SERVER_HOST = 'vlesim.onrender.com'; // Remove protocol
+  const SERVER_PORT = 5060;
   // UI setup
   const screen = blessed.screen({
     smartCSR: true,
