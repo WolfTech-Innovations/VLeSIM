@@ -6,7 +6,7 @@ const CONFIG = {
     PHONE_NUMBER_PREFIX: '1555',   // Prefix for generated phone numbers
     DATA_DIR: './data'             // Directory for storing data
   };
-  
+  const client = dgram.createSocket('udp4');
   const fs = require('fs');
   const path = require('path');
   const crypto = require('crypto');
@@ -175,7 +175,6 @@ const CONFIG = {
   app.listen(PORT, () => {
     console.log(`Server running on http://localhost:${PORT}`);
   });
-  const client = dgram.createSocket('udp4');
   const SERVER_HOST = 'vlesim.onrender.com'; // Remove protocol
   const SERVER_PORT = 5060;
   // UI setup
