@@ -8,10 +8,10 @@ const SERVER_PORT = 5060;
 function provisionESIM() {
   // Create a simple SIP INVITE message for provisioning
   const inviteMessage = 
-    'INVITE sip:provision@example.com SIP/2.0\r\n' +
+    'INVITE sip:provision@vlesim.onrender.com SIP/2.0\r\n' +
     'Via: SIP/2.0/UDP client.local;branch=z9hG4bK-test\r\n' +
     'From: <sip:client@client.local>;tag=test\r\n' +
-    'To: <sip:provision@example.com>\r\n' +
+    'To: <sip:provision@vlesim.onrender.com>\r\n' +
     'Call-ID: test-call-id\r\n' +
     'CSeq: 1 INVITE\r\n' +
     'Contact: <sip:client@client.local>\r\n' +
