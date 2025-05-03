@@ -15,7 +15,6 @@ const CONFIG = {
   const { EventEmitter } = require('events');
   const blessed = require('blessed');
   const express = require('express');
-  const path = require('path');
 
   // Setup express server
   const app = express();
