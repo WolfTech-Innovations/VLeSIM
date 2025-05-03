@@ -10,6 +10,7 @@
   "license": "GPL-2.0-only",
   "description": "A VoIP Based eSIM server",
   "dependencies": {
-    "blessed": "^0.1.81"
+    "blessed": "^0.1.81",
+    "express": "^5.1.0"
   }
 }
