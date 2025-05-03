@@ -8,5 +8,8 @@
   "keywords": [],
   "author": "WolfTech Innovations",
   "license": "GPL-2.0-only",
-  "description": "A VoIP Based eSIM server"
+  "description": "A VoIP Based eSIM server",
+  "dependencies": {
+    "blessed": "^0.1.81"
+  }
 }
