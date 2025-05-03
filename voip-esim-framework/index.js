@@ -1,180 +1,19 @@
 // Global Configuration
 const CONFIG = {
-    SIP_SERVER_URL: 'udp://vlesim.onrender.com', // SIP server domain
+    SIP_SERVER_URL: 'example.com', // SIP server domain
     SIP_SERVER_PORT: 5060,         // Default SIP port
     SIP_SERVER_PROTOCOL: 'udp',    // Protocol (udp/tcp)
     PHONE_NUMBER_PREFIX: '1555',   // Prefix for generated phone numbers
     DATA_DIR: './data'             // Directory for storing data
   };
+  
   const fs = require('fs');
   const path = require('path');
   const crypto = require('crypto');
   const dgram = require('dgram');
   const net = require('net');
   const { EventEmitter } = require('events');
-  const blessed = require('blessed');
-  const express = require('express');
-  const client = dgram.createSocket('udp4');
-  // Setup express server
-  const app = express();
-  const PORT = process.env.PORT || 3000;
   
-  // Create a UDP client
-  
-  // Middleware to serve static files (optional if needed)
-  app.use(express.static('public'));
-  app.use(express.json()); // For parsing application/json if needed in future
-  
-  // Provisioning function using UDP
-  function provisionESIM() {
-    const SERVER_HOST = 'vlesim.onrender.com';  // Replace with your server
-    const SERVER_PORT = 44666;
-  
-    // Create a simple SIP INVITE message for provisioning
-    const inviteMessage =
-      'INVITE sip:provision@vlesim.onrender.com SIP/2.0\r\n' +
-      'Via: SIP/2.0/UDP client.local;branch=z9hG4bK-test\r\n' +
-      'From: <sip:client@client.local>;tag=test\r\n' +
-      'To: <sip:provision@vlesim.onrender.com>\r\n' +
-      'Call-ID: test-call-id\r\n' +
-      'CSeq: 1 INVITE\r\n' +
-      'Contact: <sip:client@client.local>\r\n' +
-      'Content-Type: text/plain\r\n' +
-      'Content-Length: 13\r\n' +
-      '\r\n' +
-      'PROVISION-ESIM';
-  
-    client.send(Buffer.from(inviteMessage), SERVER_PORT, SERVER_HOST, (err) => {
-      if (err) {
-        console.error('Error sending request:', err);
-        client.close();
-      } else {
-        console.log('Provisioning request sent');
-      }
-    });
-  }
-  
-  // Handle incoming responses
-  client.on('message', (msg, rinfo) => {
-    console.log(`Received response from ${rinfo.address}:${rinfo.port}`);
-    
-    const response = msg.toString();
-    console.log('\nResponse:\n', response);
-    
-    // Extract relevant information from the response
-    if (response.includes('ESIM-PROVISIONED')) {
-      const lines = response.split('\n');
-      const profileData = {};
-      
-      lines.forEach(line => {
-        if (line.includes(':')) {
-          const [key, value] = line.split(':', 2);
-          profileData[key.trim()] = value.trim();
-        }
-      });
-      
-      console.log('\nProvisioned eSIM Profile:');
-      console.log(JSON.stringify(profileData, null, 2));
-    }
-    
-    client.close();
-  });
-  
-  client.on('listening', () => {
-    const address = client.address();
-    console.log(`Client listening on ${address.address}:${address.port}`);
-  });
-  
-  // Bind the UDP client to any available port
-  client.bind();
-  
-  // Express route for provisioning
-  app.post('/provision', (req, res) => {
-    provisionESIM();
-    res.json({ status: 'Provisioning request sent.' });
-  });
-  
-  // Serve the HTML frontend
-  app.get('/', (req, res) => {
-    res.send(`
-      <!DOCTYPE html>
-      <html lang="en">
-      <head>
-        <meta charset="UTF-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
-        <title>eSIM Provisioning</title>
-        <style>
-          body {
-            font-family: Arial, sans-serif;
-            background-color: #f4f4f9;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-          }
-          .container {
-            background-color: #ffffff;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
-            width: 300px;
-            text-align: center;
-          }
-          button {
-            background-color: #007BFF;
-            color: white;
-            border: none;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            border-radius: 4px;
-            width: 100%;
-          }
-          button:hover {
-            background-color: #0056b3;
-          }
-          .status {
-            margin-top: 20px;
-            font-size: 18px;
-            color: #555;
-          }
-        </style>
-      </head>
-      <body>
-        <div class="container">
-          <h1>eSIM Provisioning</h1>
-          <button onclick="provisionESIM()">Start Provisioning</button>
-          <div class="status" id="status"></div>
-        </div>
-        <script>
-          function provisionESIM() {
-            const statusElement = document.getElementById('status');
-            statusElement.textContent = "Provisioning started...";
-  
-            fetch('/provision', {
-              method: 'POST'
-            })
-            .then(response => response.json())
-            .then(data => {
-              statusElement.textContent = data.status;
-            })
-            .catch(error => {
-              console.error('Error:', error);
-              statusElement.textContent = "Error occurred.";
-            });
-          }
-        </script>
-      </body>
-      </html>
-    `);
-  });
-  
-  // Start the Express server
-  app.listen(PORT, () => {
-    console.log(`Server running on http://localhost:${PORT}`);
-  });
-
   class ESIMProvisioner {
     constructor() {
       this.profiles = new Map();
