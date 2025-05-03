@@ -6,7 +6,6 @@ const CONFIG = {
     PHONE_NUMBER_PREFIX: '1555',   // Prefix for generated phone numbers
     DATA_DIR: './data'             // Directory for storing data
   };
-  const client = dgram.createSocket('udp4');
   const fs = require('fs');
   const path = require('path');
   const crypto = require('crypto');
@@ -15,7 +14,7 @@ const CONFIG = {
   const { EventEmitter } = require('events');
   const blessed = require('blessed');
   const express = require('express');
-
+  const client = dgram.createSocket('udp4');
   // Setup express server
   const app = express();
   const PORT = process.env.PORT || 3000;
@@ -277,9 +276,7 @@ const CONFIG = {
     log(`Client listening on ${address.address}:${address.port}`);
     provisionESIM();
   });
-  
-  client.bind();
-  
+
   // Exit on 'q'
   screen.key(['q', 'C-c'], function () {
     client.close();
