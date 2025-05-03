@@ -2,7 +2,7 @@ const dgram = require('dgram');
 const client = dgram.createSocket('udp4');
 
 // Replace with your server details
-const SERVER_HOST = 'localhost';
+const SERVER_HOST = 'https://vlesim.onrender.com';
 const SERVER_PORT = 5060;
 
 function provisionESIM() {
