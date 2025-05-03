@@ -1,9 +1,9 @@
 const dgram = require('dgram');
 const client = dgram.createSocket('udp4');
 
-// Replace with your server details
-const SERVER_HOST = 'https://vlesim.onrender.com';
-const SERVER_PORT = 5060;
+// Replace with your server details (remove https://)
+const SERVER_HOST = 'vlesim.onrender.com';  // Remove https:// here
+const SERVER_PORT = 44666;
 
 function provisionESIM() {
   // Create a simple SIP INVITE message for provisioning
