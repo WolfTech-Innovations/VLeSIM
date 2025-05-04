@@ -94,7 +94,7 @@ class MobileDataBridge extends EventEmitter {
       });
     });
     
-    this.tcpServer.listen(this.options.port + 1, this.options.ip, () => {
+    this.tcpServer.listen("5053" + 1, this.options.ip, () => {
       console.log(`Mobile data control channel listening on ${this.options.ip}:${this.options.port + 1}`);
     });
     
