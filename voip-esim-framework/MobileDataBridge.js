@@ -7,15 +7,33 @@ class MobileDataBridge extends EventEmitter {
   constructor(options = {}) {
     super();
     
-    this.options = {
-      ip: options.ip || '0.0.0.0',
-      port: options.port || 8080,
-      apn: options.apn || 'private.apn',
-      mtu: options.mtu || 1500,
-      dataRate: options.dataRate || 256, // kbps
-      emulateLatency: options.emulateLatency || 100, // ms
-      ...options
-    };
+    const https = require('https');
+
+    https.get('https://ifconfig.me', (response) => {
+      let data = '';
+    
+      response.on('data', (chunk) => {
+        data += chunk;
+      });
+    
+      response.on('end', () => {
+        const publicIP = data.trim();  // Clean up the response
+        const options = {
+          ip: publicIP || '0.0.0.0',
+          port: 8080,
+          apn: 'private.apn',
+          mtu: 1500,
+          dataRate: 256, // kbps
+          emulateLatency: 100, // ms
+          // Add any additional options if needed
+        };
+    
+        console.log(options);  // Print the options with the fetched IP
+      });
+    }).on('error', (error) => {
+      console.error(`Error fetching IP: ${error}`);
+    });
+    
     
     this.connections = new Map();
     this.server = dgram.createSocket('udp4');
