@@ -8,7 +8,7 @@
   const publicIp = require('public-ip');
 
 const CONFIG = {
-  SIP_SERVER_URL: '0.0.0.0', // will be updated
+  SIP_SERVER_URL: '0.0.0.0', // will be updated in async loop
   SIP_SERVER_PORT: 5052,
   SIP_SERVER_PROTOCOL: 'udp',
   PHONE_NUMBER_PREFIX: '935',
@@ -17,7 +17,7 @@ const CONFIG = {
 
 (async () => {
   try {
-    CONFIG.SIP_SERVER_URL = await publicIp.v4();
+    CONFIG.SIP_SERVER_URL = await publicIp.publicIpv4();
     console.log('CONFIG updated with public IP:', CONFIG);
   } catch (err) {
     console.error('Could not get public IP:', err);
