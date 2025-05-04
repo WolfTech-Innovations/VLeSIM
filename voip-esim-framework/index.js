@@ -804,7 +804,7 @@ const CONFIG = {
     console.log(`External calls ${provider.sipServer.allowOutboundCalls ? 'enabled' : 'disabled'}`);
     
     process.on('SIGINT', () => {
-      console.log('Shutting down VoIP eSIM Provisioning Server...');
+      console.log('Shutting down VLeSIM Provisioning Server...');
       provider.sipServer.close();
       process.exit(0);
     });
@@ -838,7 +838,7 @@ if (require.main === module) {
   
   // In your shutdown handler
   process.on('SIGINT', () => {
-    console.log('Shutting down servers...');
+    console.log('Shutting down VLeSIM servers...');
     provider.sipServer.close();
     integratedProvider.close(); // Add this to properly close the data bridge
     process.exit(0);
