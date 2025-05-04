@@ -337,11 +337,10 @@ class IntegratedMobileDataProvider {
   }
   
   setupIntegration() {
-    // When a new eSIM is provisioned, prepare mobile data access
-    this.voipProvider.on('esim-provisioned', (profile) => {
-      console.log(`Preparing mobile data access for new eSIM: ${profile.iccid}`);
-      // Additional setup could happen here
-    });
+    // Since VoIPESIMProvider doesn't extend EventEmitter, we'll use direct
+    // verification instead of events
+    
+    // For new provisioning, we'll override the provisionNewESIM method in our wrapper
     
     // When a client connects via mobile data, verify with eSIM system
     this.dataBridge.on('client-connected', ({ clientId, iccid }) => {
@@ -356,7 +355,7 @@ class IntegratedMobileDataProvider {
   }
   
   provisionNewDevice() {
-    // Provision a new eSIM with VoIP and mobile data capabilities
+    // Use the existing provisionNewESIM method from VoIPESIMProvider
     const provisioning = this.voipProvider.provisionNewESIM();
     
     // Add mobile data specific configuration
@@ -365,6 +364,8 @@ class IntegratedMobileDataProvider {
       dataServerPort: this.dataBridge.options.port,
       apn: this.dataBridge.options.apn
     };
+    
+    console.log(`Preparing mobile data access for new eSIM: ${provisioning.profile.iccid}`);
     
     return {
       ...provisioning,
