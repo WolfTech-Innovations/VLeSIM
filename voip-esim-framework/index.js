@@ -1,19 +1,29 @@
-// Global Configuration
-const CONFIG = {
-    SIP_SERVER_URL: '0.0.0.0', // SIP server domain
-    SIP_SERVER_PORT: 5053,         // SIP port
-    SIP_SERVER_PROTOCOL: 'udp',    // Protocol (udp/tcp)
-    PHONE_NUMBER_PREFIX: '935',   // Prefix for generated phone numbers
-    DATA_DIR: './data'             // Directory for storing data
-  };
-  
   const fs = require('fs');
   const path = require('path');
   const crypto = require('crypto');
   const dgram = require('dgram');
   const net = require('net');
+  const { MobileDataBridge, IntegratedMobileDataProvider } = require('./MobileDataBridge');
   const { EventEmitter } = require('events');
-  
+  const publicIp = require('public-ip');
+
+const CONFIG = {
+  SIP_SERVER_URL: '0.0.0.0', // will be updated
+  SIP_SERVER_PORT: 5052,
+  SIP_SERVER_PROTOCOL: 'udp',
+  PHONE_NUMBER_PREFIX: '935',
+  DATA_DIR: './data'
+};
+
+(async () => {
+  try {
+    CONFIG.SIP_SERVER_URL = await publicIp.v4();
+    console.log('CONFIG updated with public IP:', CONFIG);
+  } catch (err) {
+    console.error('Could not get public IP:', err);
+  }
+})();
+
   class ESIMProvisioner {
     constructor() {
       this.profiles = new Map();
@@ -810,8 +820,6 @@ const CONFIG = {
     });
   }
 
-  // Add this near the top with your other requires
-const { MobileDataBridge, IntegratedMobileDataProvider } = require('./MobileDataBridge');
 
 // In your startup code where require.main === module
 if (require.main === module) {

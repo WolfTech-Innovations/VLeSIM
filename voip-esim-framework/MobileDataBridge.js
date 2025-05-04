@@ -2,89 +2,94 @@ const dgram = require('dgram');
 const net = require('net');
 const crypto = require('crypto');
 const EventEmitter = require('events');
+const { exec } = require('child_process');
+const fs = require('fs');
 
 class MobileDataBridge extends EventEmitter {
   constructor(options = {}) {
     super();
-    
-    const https = require('https');
 
-    https.get('https://ifconfig.me', (response) => {
-      let data = '';
-    
-      response.on('data', (chunk) => {
-        data += chunk;
-      });
-    
-      response.on('end', () => {
-        const publicIP = data.trim();  // Clean up the response
-        const options = {
-          ip: publicIP || '0.0.0.0',
-          port: 8080,
-          apn: 'private.apn',
-          mtu: 1500,
-          dataRate: 256, // kbps
-          emulateLatency: 100, // ms
-          // Add any additional options if needed
-        };
-    
-        console.log(options);  // Print the options with the fetched IP
-      });
-    }).on('error', (error) => {
-      console.error(`Error fetching IP: ${error}`);
-    });
-    
-    
+    this.options = {
+      ip: options.ip || '0.0.0.0',
+      port: options.port || 8080,
+      apn: options.apn || 'private.apn',
+      mtu: options.mtu || 1500,
+      dataRate: options.dataRate || 256, // kbps
+      emulateLatency: options.emulateLatency || 100, // ms
+      tunInterface: options.tunInterface || '/dev/net/tun', // Tun interface
+      ...options
+    };
+
     this.connections = new Map();
     this.server = dgram.createSocket('udp4');
     this.tcpServer = net.createServer();
-    
+
+    this.setupTunInterface();
     this.setupServers();
   }
-  
+
+  setupTunInterface() {
+    // Set up the TUN interface to route packets
+    exec(`ip tuntap add dev tun0 mode tun`, (err, stdout, stderr) => {
+      if (err) {
+        console.error('Error creating TUN interface:', stderr);
+        return;
+      }
+      console.log('TUN interface created: tun0');
+      exec(`ifconfig tun0 10.0.0.1/24 up`, (err) => {
+        if (err) {
+          console.error('Error configuring TUN interface:', err);
+        } else {
+          console.log('TUN interface configured with IP: 10.0.0.1/24');
+        }
+      });
+    });
+  }
+
   setupServers() {
     // UDP server for data packets
     this.server.on('error', (err) => {
       console.error(`UDP data server error: ${err}`);
       this.server.close();
     });
-    
+
     this.server.on('message', (msg, rinfo) => {
       this.handleDataPacket(msg, rinfo);
     });
-    
+
     this.server.on('listening', () => {
       const address = this.server.address();
       console.log(`Mobile data bridge listening on ${address.address}:${address.port}`);
     });
-    
-    this.server.bind("5052");
-    
+
+    this.server.bind(this.options.port);
+
     // TCP server for control channel
     this.tcpServer.on('connection', (socket) => {
       const clientId = `${socket.remoteAddress}:${socket.remotePort}`;
-      
+
       this.connections.set(clientId, {
         socket,
         connected: true,
         lastActivity: Date.now(),
         esimIccid: null,
-        dataUsage: 0
+        dataUsage: 0,
+        dataPort: null
       });
-      
+
       socket.on('data', (data) => {
         this.handleControlMessage(data, clientId);
       });
-      
+
       socket.on('error', (err) => {
         console.error(`TCP socket error for ${clientId}: ${err}`);
         this.disconnectClient(clientId);
       });
-      
+
       socket.on('close', () => {
         this.disconnectClient(clientId);
       });
-      
+
       // Send welcome message with APN info
       this.sendControlMessage(clientId, {
         type: 'welcome',
@@ -93,39 +98,36 @@ class MobileDataBridge extends EventEmitter {
         dataRate: this.options.dataRate
       });
     });
-    
-    this.tcpServer.listen("5053" + 1, this.options.ip, () => {
+
+    this.tcpServer.listen(this.options.port + 1, this.options.ip, () => {
       console.log(`Mobile data control channel listening on ${this.options.ip}:${this.options.port + 1}`);
     });
-    
+
     // Heartbeat to check connection status
     setInterval(() => this.checkConnections(), 30000);
   }
-  
+
   handleControlMessage(data, clientId) {
     try {
       const message = JSON.parse(data.toString());
       const client = this.connections.get(clientId);
-      
+
       if (!client) return;
       client.lastActivity = Date.now();
-      
+
       switch (message.type) {
         case 'auth':
-          // Authenticate using eSIM credentials
           if (message.iccid && message.imsi) {
             client.esimIccid = message.iccid;
             client.esimImsi = message.imsi;
-            
-            // Simulate authentication process
+
             const authenticated = this.validateESIM(message.iccid, message.imsi);
-            
+
             this.sendControlMessage(clientId, {
               type: 'auth_response',
-              success: authenticated,
-              ip: authenticated ? this.assignPrivateIP(clientId) : null
+              success: authenticated
             });
-            
+
             if (authenticated) {
               this.emit('client-connected', {
                 clientId,
@@ -135,14 +137,12 @@ class MobileDataBridge extends EventEmitter {
             }
           }
           break;
-          
+
         case 'keep_alive':
-          // Reset connection timeout
           this.sendControlMessage(clientId, { type: 'keep_alive_ack' });
           break;
-          
+
         case 'request_data':
-          // Client requesting data channel setup
           const dataPort = this.assignDataPort(clientId);
           this.sendControlMessage(clientId, {
             type: 'data_channel',
@@ -154,34 +154,25 @@ class MobileDataBridge extends EventEmitter {
       console.error(`Error processing control message from ${clientId}: ${err}`);
     }
   }
-  
+
   handleDataPacket(msg, rinfo) {
     const clientId = `${rinfo.address}:${rinfo.port}`;
     const client = this.getClientByDataPort(rinfo.port);
-    
+
     if (!client) return;
-    
-    // Simulate cellular data processing
-    if (this.options.emulateLatency > 0) {
-      setTimeout(() => {
-        this.processPacket(msg, client.clientId);
-      }, this.options.emulateLatency);
-    } else {
-      this.processPacket(msg, client.clientId);
-    }
+
+    // Real packet processing
+    this.routePacket(msg, clientId);
   }
-  
-  processPacket(packet, clientId) {
+
+  routePacket(packet, clientId) {
     const client = this.connections.get(clientId);
     if (!client) return;
-    
-    // Update data usage statistics
+
     client.dataUsage += packet.length;
-    
-    // Extract packet headers
     const packetType = packet[0] & 0xF0;
-    
-    // Process based on packet type (TCP, UDP, etc.)
+
+    // Process based on packet type
     switch (packetType) {
       case 0x40: // IPv4
         this.routeIPv4Packet(packet, clientId);
@@ -190,82 +181,48 @@ class MobileDataBridge extends EventEmitter {
         this.routeIPv6Packet(packet, clientId);
         break;
       default:
-        // Unknown packet type
         console.warn(`Received unknown packet type: ${packetType.toString(16)}`);
     }
   }
-  
+
   routeIPv4Packet(packet, clientId) {
-    // Route the IPv4 packet to its destination or pass it to the internet gateway
-    this.emit('packet', {
-      clientId,
-      packet,
-      protocol: 'ipv4'
-    });
-    
-    // In a real implementation, we would route this through a network interface
-    // For now, we'll just simulate a response
-    this.simulateResponse(clientId);
-  }
-  
-  routeIPv6Packet(packet, clientId) {
-    // Route the IPv6 packet
-    this.emit('packet', {
-      clientId,
-      packet,
-      protocol: 'ipv6'
-    });
-    
-    this.simulateResponse(clientId);
-  }
-  
-  simulateResponse(clientId) {
     const client = this.connections.get(clientId);
-    if (!client || !client.dataPort) return;
-    
-    // Create a simulated response packet
-    const responseSize = Math.floor(Math.random() * 1000) + 64;
-    const response = Buffer.from(crypto.randomBytes(responseSize));
-    
-    // Set packet header to look like a legitimate response
-    response[0] = 0x45; // IPv4, header length 5
-    
-    // Send back to client on their data port
-    this.server.send(response, client.dataPort, client.socket.remoteAddress);
+    if (client && client.dataPort) {
+      console.log(`Routing IPv4 packet for ${clientId} to TUN interface`);
+
+      // Forward packet to TUN interface (real routing logic)
+      fs.writeFileSync('/dev/net/tun', packet);  // Send to tun interface
+    }
   }
-  
+
+  routeIPv6Packet(packet, clientId) {
+    const client = this.connections.get(clientId);
+    if (client && client.dataPort) {
+      console.log(`Routing IPv6 packet for ${clientId} to TUN interface`);
+
+      // Forward packet to TUN interface (real routing logic)
+      fs.writeFileSync('/dev/net/tun', packet);  // Send to tun interface
+    }
+  }
+
   sendControlMessage(clientId, message) {
     const client = this.connections.get(clientId);
     if (!client || !client.socket || !client.connected) return;
-    
+
     const data = Buffer.from(JSON.stringify(message));
     client.socket.write(data);
   }
-  
-  assignPrivateIP(clientId) {
-    // Assign a private IP address (10.x.x.x) to the client
-    const client = this.connections.get(clientId);
-    if (!client) return null;
-    
-    // Generate a deterministic but seemingly random IP based on clientId
-    const hash = crypto.createHash('md5').update(clientId).digest();
-    const ip = `10.${hash[0]}.${hash[1]}.${hash[2]}`;
-    
-    client.ip = ip;
-    return ip;
-  }
-  
+
   assignDataPort(clientId) {
     const client = this.connections.get(clientId);
     if (!client) return null;
-    
-    // Assign a port for data transmission (dynamic range)
+
     const dataPort = 49152 + Math.floor(Math.random() * 16383);
     client.dataPort = dataPort;
-    
+
     return dataPort;
   }
-  
+
   getClientByDataPort(port) {
     for (const [clientId, client] of this.connections.entries()) {
       if (client.dataPort === port) {
@@ -274,17 +231,16 @@ class MobileDataBridge extends EventEmitter {
     }
     return null;
   }
-  
+
   validateESIM(iccid, imsi) {
-    // In a real implementation, this would validate against the ESIMProvisioner
-    // For this module, we'll simply accept all credentials
+    // Simple mock authentication
     return true;
   }
-  
+
   disconnectClient(clientId) {
     const client = this.connections.get(clientId);
     if (!client) return;
-    
+
     client.connected = false;
     if (client.socket) {
       try {
@@ -293,57 +249,33 @@ class MobileDataBridge extends EventEmitter {
         // Socket may already be closed
       }
     }
-    
+
     this.connections.delete(clientId);
     this.emit('client-disconnected', { clientId });
-    
+
     console.log(`Client disconnected: ${clientId}`);
   }
-  
+
   checkConnections() {
     const now = Date.now();
     for (const [clientId, client] of this.connections.entries()) {
-      // Disconnect if no activity for 2 minutes
       if (now - client.lastActivity > 120000) {
         console.log(`Client ${clientId} timed out`);
         this.disconnectClient(clientId);
       }
     }
   }
-  
-  getConnectionStats() {
-    const stats = {
-      activeConnections: this.connections.size,
-      totalDataUsage: 0,
-      connections: []
-    };
-    
-    for (const [clientId, client] of this.connections.entries()) {
-      stats.totalDataUsage += client.dataUsage;
-      stats.connections.push({
-        clientId,
-        ip: client.ip,
-        dataUsage: client.dataUsage,
-        iccid: client.esimIccid,
-        connectedSince: client.lastActivity
-      });
-    }
-    
-    return stats;
-  }
-  
+
   close() {
-    // Disconnect all clients
     for (const clientId of this.connections.keys()) {
       this.disconnectClient(clientId);
     }
-    
-    // Close servers
+
     this.server.close();
     this.tcpServer.close();
+    console.log('Mobile data bridge closed');
   }
 }
-
 // Integration with existing VoIP eSIM Provider
 class IntegratedMobileDataProvider {
   constructor(voipProvider, options = {}) {
@@ -370,32 +302,8 @@ class IntegratedMobileDataProvider {
         this.dataBridge.disconnectClient(clientId);
       }
     });
-  }
+}}
   
-  provisionNewDevice() {
-    // Use the existing provisionNewESIM method from VoIPESIMProvider
-    const provisioning = this.voipProvider.provisionNewESIM();
-    
-    // Add mobile data specific configuration
-    const mobileDataConfig = {
-      dataServerIp: this.dataBridge.options.ip,
-      dataServerPort: this.dataBridge.options.port,
-      apn: this.dataBridge.options.apn
-    };
-    
-    console.log(`Preparing mobile data access for new eSIM: ${provisioning.profile.iccid}`);
-    
-    return {
-      ...provisioning,
-      mobileDataConfig
-    };
-  }
-  
-  close() {
-    this.dataBridge.close();
-  }
-}
-
 module.exports = {
   MobileDataBridge,
   IntegratedMobileDataProvider
