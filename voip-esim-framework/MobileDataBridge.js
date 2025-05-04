@@ -58,7 +58,7 @@ class MobileDataBridge extends EventEmitter {
       console.log(`Mobile data bridge listening on ${address.address}:${address.port}`);
     });
     
-    this.server.bind(this.options.port);
+    this.server.bind("8080");
     
     // TCP server for control channel
     this.tcpServer.on('connection', (socket) => {
