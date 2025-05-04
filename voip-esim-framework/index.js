@@ -809,3 +809,36 @@ const CONFIG = {
       process.exit(0);
     });
   }
+  // Add this near the top with your other requires
+const { MobileDataBridge, IntegratedMobileDataProvider } = require('./MobileDataBridge');
+
+// Then modify your startup code (in the section where require.main === module)
+if (require.main === module) {
+  // Create VoIP provider with default configurations from CONFIG (this was already in your code)
+  const provider = new VoIPESIMProvider({
+    sip: {
+      domain: CONFIG.SIP_SERVER_URL,
+      udpPort: CONFIG.SIP_SERVER_PORT,
+      tcpPort: CONFIG.SIP_SERVER_PORT + 1
+    },
+    phoneNumberPrefix: CONFIG.PHONE_NUMBER_PREFIX
+  });
+  
+  // Create the integrated provider with mobile data capabilities (add this new part)
+  const integratedProvider = new IntegratedMobileDataProvider(provider, {
+    ip: CONFIG.SIP_SERVER_URL,
+    port: CONFIG.SIP_SERVER_PORT + 2,
+    apn: 'private.network.apn'
+  });
+  
+  console.log(`VoIP eSIM Provisioning Server started at ${CONFIG.SIP_SERVER_URL}:${CONFIG.SIP_SERVER_PORT}`);
+  console.log(`Mobile Data Bridge started at ${CONFIG.SIP_SERVER_URL}:${CONFIG.SIP_SERVER_PORT + 2}`);
+  console.log(`External calls ${provider.sipServer.allowOutboundCalls ? 'enabled' : 'disabled'}`);
+  
+  process.on('SIGINT', () => {
+    console.log('Shutting down servers...');
+    provider.sipServer.close();
+    integratedProvider.close(); // Add this line to properly close the data bridge
+    process.exit(0);
+  });
+}
