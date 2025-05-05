@@ -4,7 +4,19 @@ const https = require('https');
 
 const SERVER_HOST = "0.0.0.0";
 const SERVER_PORT = 5052;
-
+// Replace the require with dynamic import
+(async () => {
+  try {
+    // Dynamically import the public-ip module
+    const publicIp = await import('public-ip');
+    
+    // Use the imported module to get the public IP
+    CONFIG.SERVER_HOST = await publicIp.publicIpv4();
+    console.log('CONFIG updated with public IP:', CONFIG);
+  } catch (err) {
+    console.error('Could not get public IP:', err);
+  }
+})();
 function provisionESIM() {
   // Create a simple SIP INVITE message for provisioning
   const inviteMessage = 
