@@ -2,22 +2,7 @@ const dgram = require('dgram');
 const client = dgram.createSocket('udp4');
 const https = require('https');
 
-https.get('https://ifconfig.me', (response) => {
-  let data = '';
-
-  response.on('data', (chunk) => {
-    data += chunk;
-  });
-
-  response.on('end', () => {
-    const ip = data.trim();  // Remove any extra whitespace or newline
-    const SERVER_HOST = ip;
-    console.log(SERVER_HOST);
-  });
-}).on('error', (error) => {
-  console.error(`Error fetching IP: ${error}`);
-});
-
+const SERVER_HOST = "0.0.0.0";
 const SERVER_PORT = 5053;
 
 function provisionESIM() {
