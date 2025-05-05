@@ -45,11 +45,19 @@ async function createMultipleCells(count = 2) {
   }
 }
 
+async function runServer2() {
+  const serverPath = path.join(__dirname, 'MobileDeviceAdapter.js');
+  console.log('[*] Starting MobileDeviceAdapter.js...');
+  const server = exec(`node ${serverPath} &`);
+  server.stdout.pipe(process.stdout);
+  server.stderr.pipe(process.stderr);
+}
+
 // Launch the main server afterward
 async function runServer() {
   const serverPath = path.join(__dirname, 'Server.js');
   console.log('[*] Starting Server.js...');
-  const server = exec(`node ${serverPath}`);
+  const server = exec(`node ${serverPath} `);
   server.stdout.pipe(process.stdout);
   server.stderr.pipe(process.stderr);
 }

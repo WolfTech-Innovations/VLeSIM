@@ -26,7 +26,7 @@ if [ $? -ne 0 ]; then
     echo -e "${RED}[X] Failed to get sudo permissions.${RESET}"
     exit 1
 fi
-
+npm install public-ip
 # Run the setup script
-echo -e "${GREEN}🚀 Launching setup and server...${RESET}"
+echo -e "${GREEN}Launching setup and server...${RESET}"
 node PrivateCelluarCore.js

@@ -339,7 +339,7 @@ class MobileDeviceAdapter {
     this.saveDevice(deviceId, deviceData);
   }
   
-  generateIOSInstructions(activationCode, profile) {
+  generateIOSInstructions(activationCode, profile) {voip-esim-frameworkvoip-esim-framework
     return `
 iPhone/iPad eSIM Installation Instructions
 =========================================
@@ -696,8 +696,8 @@ module.exports = {
 if (require.main === module) {
   const adapter = new MobileDeviceAdapter({
     serverHost: process.env.SERVER_HOST || '0.0.0.0',
-    serverPort: parseInt(process.env.SERVER_PORT || '5052'),
-    adapterPort: parseInt(process.env.ADAPTER_PORT || '5053')
+    serverPort: parseInt(process.env.SERVER_PORT || '5056'),
+    adapterPort: parseInt(process.env.ADAPTER_PORT || '5058')
   });
   
   console.log('Mobile Device Adapter started');
