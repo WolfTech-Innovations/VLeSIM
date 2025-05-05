@@ -3,7 +3,7 @@ const client = dgram.createSocket('udp4');
 const https = require('https');
 
 const SERVER_HOST = "0.0.0.0";
-const SERVER_PORT = 5053;
+const SERVER_PORT = 5052;
 
 function provisionESIM() {
   // Create a simple SIP INVITE message for provisioning
