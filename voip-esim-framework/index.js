@@ -5,7 +5,6 @@
   const net = require('net');
   const { MobileDataBridge, IntegratedMobileDataProvider } = require('./MobileDataBridge');
   const { EventEmitter } = require('events');
-  const publicIp = require('public-ip');
 
 const CONFIG = {
   SIP_SERVER_URL: '0.0.0.0', // will be updated in async loop
@@ -15,8 +14,13 @@ const CONFIG = {
   DATA_DIR: './data'
 };
 
+// Replace the require with dynamic import
 (async () => {
   try {
+    // Dynamically import the public-ip module
+    const publicIp = await import('public-ip');
+    
+    // Use the imported module to get the public IP
     CONFIG.SIP_SERVER_URL = await publicIp.publicIpv4();
     console.log('CONFIG updated with public IP:', CONFIG);
   } catch (err) {
