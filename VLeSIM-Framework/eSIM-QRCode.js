@@ -8,9 +8,10 @@
 const fs = require('fs');
 const path = require('path');
 const QRCode = require('qrcode');
+const { CONFIG } = require ('./Server')
 const CONFIG = {
   DATA_DIR: './data',
-  SM_DP_PLUS_ADDRESS: process.env.SM_DP_PLUS_ADDRESS || '0.0.0.0',
+  SM_DP_PLUS_ADDRESS: CONFIG.SIP_SERVER_URL,
   OUTPUT_DIR: './qrcodes'
 };
 

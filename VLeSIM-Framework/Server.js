@@ -856,3 +856,5 @@ if (require.main === module) {
     process.exit(0);
   });
 }
+
+module.exports = { CONFIG }
