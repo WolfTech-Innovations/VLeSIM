@@ -115,7 +115,7 @@ class MobileDataBridge extends EventEmitter {
     
     this.options = {
       port: 'CONFIG.SIP_SERVER_PORT + 4',
-      ip: CONFIG.SIP_SERVER_URL,
+      ip: '0.0.0.0',
       apn: 'internet' || 'internet',
       dataDir: options.dataDir || './data/mobile',
       ...options
@@ -125,9 +125,6 @@ class MobileDataBridge extends EventEmitter {
     this.packetHandler = new DataPacketHandler();
     this.clients = new Map();
     this.profiles = new Map();
-    
-    this.dataServer = dgram.createSocket('udp4');
-    this.controlServer = net.createSocket('tcp4');
     this.provisioningServer = http.createServer();
     
     this.dataPath = path.join(process.cwd(), this.options.dataDir);
@@ -140,18 +137,6 @@ class MobileDataBridge extends EventEmitter {
   }
   
   setupServers() {
-    // Data server for encapsulated IP traffic
-    this.dataServer.on('message', (msg, rinfo) => {
-      this.handleDataPacket(msg, rinfo);
-    });
-    
-    this.dataServer.on('error', (err) => {
-      this.emit('error', 'data', err);
-    });
-    
-    this.dataServer.bind(this.options.port, this.options.ip);
-    
-    // Control server for session management
     this.controlServer = net.createServer((socket) => {
       let clientId = null;
       
